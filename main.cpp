@@ -108,6 +108,7 @@ void ComNumIntFourier(double amps[], double phases[], double thetas[], int count
         *finalAmp = 0.0;
         *finalPhase = 0.0;
     }
+}
 
 void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int thickness) {
     // Initialize variables for Bresenham's line algorithm
