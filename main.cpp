@@ -2,9 +2,11 @@
 #include <SDL2/SDL.h>
 #include <math.h>
 #include <vector>
+#include <time.h>
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH 1200
+#define SCREEN_HEIGHT 900
+#define SIMULATION_PERIOD 30
 
 // Function to draw an oscillating sine wave
 void drawSineWave(SDL_Renderer *renderer, float phase) {
@@ -25,29 +27,55 @@ void drawSineWave(SDL_Renderer *renderer, float phase) {
     }
 }
 
+void drawArrow(SDL_Renderer *renderer, int x1, int y1, int x2, int y2) {
+    // Draw the line segment from (x1, y1) to (x2, y2)
+    SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
 
-void drawCircle(SDL_Renderer *renderer, int xIn, int yIn, int radius, int colors[]) {
-    SDL_SetRenderDrawColor(renderer, colors[0], colors[1], colors[2], 255); // White circle
+    // Calculate angle of the line
+    float angle = atan2(y2 - y1, x2 - x1);
 
+    // Calculate coordinates for the arrowhead
+    int arrowLength = 20;
+    float arrowAngle = M_PI / 6;
+
+    int x3 = x2 - arrowLength * cos(angle - arrowAngle);
+    int y3 = y2 - arrowLength * sin(angle - arrowAngle);
+    int x4 = x2 - arrowLength * cos(angle + arrowAngle);
+    int y4 = y2 - arrowLength * sin(angle + arrowAngle);
+
+    // Draw the arrowhead
+    SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
+    SDL_RenderDrawLine(renderer, x2, y2, x4, y4);
+}
+
+void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
 
     for (int x = -radius; x <= radius; ++x) {
         int y = static_cast<int>(std::sqrt(radius * radius - x * x));
-        SDL_RenderDrawPoint(renderer, xIn + x, yIn + y);
-        SDL_RenderDrawPoint(renderer, xIn + x, yIn - y);
+        SDL_RenderDrawPoint(renderer, centerX + x, centerY + y);
+        SDL_RenderDrawPoint(renderer, centerX + x, centerY - y);
+    }
+
+    for (int y = -radius; y <= radius; ++y) {
+        int x = static_cast<int>(std::sqrt(radius * radius - y * y));
+        SDL_RenderDrawPoint(renderer, centerX + x, centerY + y);
+        SDL_RenderDrawPoint(renderer, centerX - x, centerY + y);
     }
 }
 
-void drawFourier(SDL_Renderer *renderer, float ampArray[], float offsets[], int ampDegree, float t) {
-    float purpleness = 255.0/ampDegree;
+void drawFourier(SDL_Renderer *renderer, float ampArray[], float offsets[], int ampDegree, double t) {
+    int colors = 3;
+    float purpleness = 255.0/(colors-1);
     int prev_x = SCREEN_WIDTH/2;
     int prev_y = SCREEN_HEIGHT/2;
     for (int i = 0; i < ampDegree; i++) {
         int x = prev_x + ampArray[i] * cos((i+1)*t+offsets[i]);
         int y = prev_y + ampArray[i] * (-sin((i+1)*t+offsets[i]));
-        SDL_SetRenderDrawColor(renderer, 255, 0, (int)(i * purpleness), 255);
-        SDL_RenderDrawLine(renderer, prev_x, prev_y, x, y);
-        int colorsIn[] = {255,255,255};
-        drawCircle(renderer, prev_x, prev_y, ampArray[i], colorsIn);
+        int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
+        SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
+        drawArrow(renderer, prev_x, prev_y, x, y);
+        SDL_SetRenderDrawColor(renderer, 0, 125+(int)(color[2]/2), 0, 10);
+        drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
         prev_y = y;
     }
@@ -75,14 +103,20 @@ int main(int argc, char *argv[]) {
     
     int quit = 0;
     SDL_Event event;
-    float time = 0;
+    double time = 0;
 
+    clock_t prev_time = clock();
+    clock_t now_time;
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
                 quit = 1;
             }
         }
+        // Find the time passed since last iteration
+        now_time = clock();
+        time += (((double)(now_time - prev_time)) / CLOCKS_PER_SEC) * 20;
+        prev_time = clock();
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set color to black
         SDL_RenderClear(renderer);
@@ -90,11 +124,10 @@ int main(int argc, char *argv[]) {
         //drawSineWave(renderer, phase);
         float amps[] = {200.0, 150.0, 125.0, 100.0, 75.0};
         float offsets[] = {1.0,0.5,23.2, 293.234, 0.0};
-        drawFourier(renderer, amps, offsets, 5, time);
+        drawFourier(renderer, amps, offsets, 5, time / SIMULATION_PERIOD);
 
         SDL_RenderPresent(renderer);
 
-        time += 0.01;  // Increment the phase to make the sine wave oscillate
         SDL_Delay(16);  // Delay to limit the frame rate
     }
 
