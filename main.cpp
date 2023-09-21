@@ -66,6 +66,17 @@ void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int t
     int sy = (y1 < y2) ? 1 : -1;
     int err = dx - dy;
 
+    // Get current context color
+    // Variables to store the RGBA values
+    Uint8 r, g, b, a;
+
+    // Get the current draw color
+    if (SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a) != 0) {
+        // handle error
+        printf("Error getting draw color: %s\n", SDL_GetError());
+        return;
+    }
+
     // Calculate offsets for thickness
     int offsetX = 0;
     int offsetY = 0;
@@ -78,8 +89,8 @@ void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int t
 
     // Loop to draw the line
     while (true) {
-        // Draw central rectangle with full alpha (255)
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        // Draw central rectangle with context alpha
+        SDL_SetRenderDrawColor(renderer, r, g, b, a);
         SDL_Rect rect;
         rect.x = x1 - thickness / 2;
         rect.y = y1 - thickness / 2;
@@ -89,8 +100,8 @@ void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int t
 
         // Create anti-aliasing effect
         for (int offset = 1; offset <= 2; ++offset) {
-            Uint8 alpha = 255 / (offset * 2);
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
+            Uint8 alpha = a / (offset * 2);
+            SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
 
             // Draw horizontal and vertical anti-aliasing rectangles
             SDL_Rect hRect = rect;
@@ -118,6 +129,8 @@ void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int t
             y1 += sy;
         }
     }
+    // Reset color
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
 
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
@@ -150,7 +163,7 @@ SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], flo
         int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
         drawArrow(renderer, (int)prev_x, (int)prev_y, (int)x, (int)y);
-        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 90);
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 70);
         drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
         prev_y = y;
@@ -171,7 +184,6 @@ void drawLinesFromQueue(SDL_Renderer *renderer, std::queue<SDL_Point> pointQueue
         currentPoint = queueCopy.front();
         queueCopy.pop();
         DrawThickLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y, 5);
-        // SDL_RenderDrawLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y);
         lastPoint = currentPoint;
     }
 }
