@@ -79,21 +79,24 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
 SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], float offsets[], int ampDegree, double t) {
     int colors = 3;
     float purpleness = 255.0/(colors-1);
-    int prev_x = winDim[0]/2;
-    int prev_y = winDim[1]/2;
+    float prev_x = winDim[0]/2.0;
+    float prev_y = winDim[1]/2.0;
     for (int i = 0; i < ampDegree; i++) {
-        int x = prev_x + ampArray[i] * cos((i+1)*t+offsets[i]);
-        int y = prev_y + ampArray[i] * (-sin((i+1)*t+offsets[i]));
+        float val = cos((i+1)*t+offsets[i]);
+        printf("Val: %f\n", val);
+        float x = prev_x + ampArray[i] * val;
+        printf("x: %f\n", x);
+        float y = prev_y + ampArray[i] * (-sin((i+1)*t+offsets[i]));
         int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
-        drawArrow(renderer, prev_x, prev_y, x, y);
+        drawArrow(renderer, (int)prev_x, (int)prev_y, (int)x, (int)y);
         SDL_SetRenderDrawColor(renderer, 0, 125+(int)(color[2]/2), 0, 10);
         drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
         prev_y = y;
     }
 
-    return SDL_Point {prev_x, prev_y};
+    return SDL_Point {(int)prev_x, (int)prev_y};
 }
 
 int main(int argc, char *argv[]) {
