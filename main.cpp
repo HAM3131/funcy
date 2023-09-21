@@ -176,16 +176,33 @@ void drawLinesFromQueue(SDL_Renderer *renderer, std::queue<SDL_Point> pointQueue
     std::queue<SDL_Point> queueCopy = pointQueue;
     SDL_Point currentPoint;
     SDL_Point lastPoint;
+
+    // Variables to store the RGBA values
+    Uint8 r, g, b, a;
+
+    // Get the current draw color
+    if (SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a) != 0) {
+        // handle error
+        printf("Error getting draw color: %s\n", SDL_GetError());
+        return;
+    }
+
     if (!queueCopy.empty()) {
         lastPoint = queueCopy.front();
         queueCopy.pop();
     }
+    int i = 1;
     while (!queueCopy.empty()) {
+        if (i < 256){
+            SDL_SetRenderDrawColor(renderer, r, g, b, i);
+        }
         currentPoint = queueCopy.front();
         queueCopy.pop();
         DrawThickLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y, 5);
         lastPoint = currentPoint;
+        i++;
     }
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
 
 int main(int argc, char *argv[]) {
