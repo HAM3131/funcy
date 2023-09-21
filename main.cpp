@@ -105,8 +105,8 @@ int main(int argc, char *argv[]) {
     SDL_Event event;
     double time = 0;
 
-    clock_t prev_time = clock();
-    clock_t now_time;
+    Uint32 prev_time = SDL_GetTicks();
+    Uint32 now_time;
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
@@ -114,9 +114,10 @@ int main(int argc, char *argv[]) {
             }
         }
         // Find the time passed since last iteration
-        now_time = clock();
-        time += (((double)(now_time - prev_time)) / CLOCKS_PER_SEC) * 20;
-        prev_time = clock();
+        now_time = SDL_GetTicks();
+        time += (((double)(now_time - prev_time)) / 1000.0f);
+        printf("%f\n", time);
+        prev_time = now_time;
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set color to black
         SDL_RenderClear(renderer);
