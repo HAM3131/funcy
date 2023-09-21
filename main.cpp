@@ -87,31 +87,27 @@ void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int t
         rect.h = thickness;
         SDL_RenderFillRect(renderer, &rect);
 
-        // Draw flanking rectangles with lower alpha values (128 and 64)
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
-        SDL_Rect rect1 = rect;
-        rect1.x = rect.x - 1;
-        SDL_RenderFillRect(renderer, &rect1);
-        
-        SDL_Rect rect2 = rect;
-        rect2.x = rect.x + 1;
-        SDL_RenderFillRect(renderer, &rect2);
+        // Create anti-aliasing effect
+        for (int offset = 1; offset <= 2; ++offset) {
+            Uint8 alpha = 255 / (offset * 2);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, alpha);
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 64);
-        SDL_Rect rect3 = rect;
-        rect3.x = rect.x - 2;
-        SDL_RenderFillRect(renderer, &rect3);
+            // Draw horizontal and vertical anti-aliasing rectangles
+            SDL_Rect hRect = rect;
+            hRect.x = rect.x - offset;
+            hRect.w = rect.w + 2 * offset;
+            SDL_RenderFillRect(renderer, &hRect);
 
-        SDL_Rect rect4 = rect;
-        rect4.x = rect.x + 2;
-        SDL_RenderFillRect(renderer, &rect4);
+            SDL_Rect vRect = rect;
+            vRect.y = rect.y - offset;
+            vRect.h = rect.h + 2 * offset;
+            SDL_RenderFillRect(renderer, &vRect);
+        }
 
-        // Check for end of line
         if (x1 == x2 && y1 == y2) {
             break;
         }
 
-        // Bresenham's line algorithm
         int e2 = 2 * err;
         if (e2 > -dy) {
             err -= dy;
