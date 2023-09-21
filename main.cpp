@@ -27,7 +27,26 @@ void drawSineWave(SDL_Renderer *renderer, float phase) {
     }
 }
 
+void drawArrow(SDL_Renderer *renderer, int x1, int y1, int x2, int y2) {
+    // Draw the line segment from (x1, y1) to (x2, y2)
+    SDL_RenderDrawLine(renderer, x1, y1, x2, y2);
 
+    // Calculate angle of the line
+    float angle = atan2(y2 - y1, x2 - x1);
+
+    // Calculate coordinates for the arrowhead
+    int arrowLength = 20;
+    float arrowAngle = M_PI / 6;
+
+    int x3 = x2 - arrowLength * cos(angle - arrowAngle);
+    int y3 = y2 - arrowLength * sin(angle - arrowAngle);
+    int x4 = x2 - arrowLength * cos(angle + arrowAngle);
+    int y4 = y2 - arrowLength * sin(angle + arrowAngle);
+
+    // Draw the arrowhead
+    SDL_RenderDrawLine(renderer, x2, y2, x3, y3);
+    SDL_RenderDrawLine(renderer, x2, y2, x4, y4);
+}
 
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
 
@@ -53,7 +72,7 @@ void drawFourier(SDL_Renderer *renderer, float ampArray[], float offsets[], int 
         int y = prev_y + ampArray[i] * (-sin((i+1)*t+offsets[i]));
         int color[] = {255-(int)(i * purpleness),0,(int)(i * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
-        SDL_RenderDrawLine(renderer, prev_x, prev_y, x, y);
+        drawArrow(renderer, prev_x, prev_y, x, y);
         SDL_SetRenderDrawColor(renderer, 0, color[2], 0, 10);
         drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
