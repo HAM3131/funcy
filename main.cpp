@@ -58,6 +58,72 @@ void drawArrow(SDL_Renderer *renderer, int x1, int y1, int x2, int y2) {
     SDL_RenderDrawLine(renderer, x2, y2, x4, y4);
 }
 
+void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int thickness) {
+    // Initialize variables for Bresenham's line algorithm
+    int dx = std::abs(x2 - x1);
+    int dy = std::abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1;
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx - dy;
+
+    // Calculate offsets for thickness
+    int offsetX = 0;
+    int offsetY = 0;
+    if (dx != 0) {
+        offsetX = (thickness - 1) * sqrt(1 + (dy * dy) / (dx * dx));
+    }
+    if (dy != 0) {
+        offsetY = (thickness - 1) * sqrt(1 + (dx * dx) / (dy * dy));
+    }
+
+    // Loop to draw the line
+    while (true) {
+        // Draw central rectangle with full alpha (255)
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_Rect rect;
+        rect.x = x1 - thickness / 2;
+        rect.y = y1 - thickness / 2;
+        rect.w = thickness;
+        rect.h = thickness;
+        SDL_RenderFillRect(renderer, &rect);
+
+        // Draw flanking rectangles with lower alpha values (128 and 64)
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 128);
+        SDL_Rect rect1 = rect;
+        rect1.x = rect.x - 1;
+        SDL_RenderFillRect(renderer, &rect1);
+        
+        SDL_Rect rect2 = rect;
+        rect2.x = rect.x + 1;
+        SDL_RenderFillRect(renderer, &rect2);
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 64);
+        SDL_Rect rect3 = rect;
+        rect3.x = rect.x - 2;
+        SDL_RenderFillRect(renderer, &rect3);
+
+        SDL_Rect rect4 = rect;
+        rect4.x = rect.x + 2;
+        SDL_RenderFillRect(renderer, &rect4);
+
+        // Check for end of line
+        if (x1 == x2 && y1 == y2) {
+            break;
+        }
+
+        // Bresenham's line algorithm
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x1 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y1 += sy;
+        }
+    }
+}
+
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
     
     if (radius < 0){
@@ -88,7 +154,7 @@ SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], flo
         int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
         drawArrow(renderer, (int)prev_x, (int)prev_y, (int)x, (int)y);
-        SDL_SetRenderDrawColor(renderer, 0, 125+(int)(color[2]/2), 0, 10);
+        SDL_SetRenderDrawColor(renderer, 0, 125, 0, 10);
         drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
         prev_y = y;
@@ -108,7 +174,8 @@ void drawLinesFromQueue(SDL_Renderer *renderer, std::queue<SDL_Point> pointQueue
     while (!queueCopy.empty()) {
         currentPoint = queueCopy.front();
         queueCopy.pop();
-        SDL_RenderDrawLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y);
+        DrawThickLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y, 5);
+        // SDL_RenderDrawLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y);
         lastPoint = currentPoint;
     }
 }
@@ -168,8 +235,6 @@ int main(int argc, char *argv[]) {
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set color to black
         SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set color to white
-        drawLinesFromQueue(renderer, pointsQueue);
 
         // drawSineWave(renderer, phase);
         float amps[] = {200.0, 150.0, -125.0, 100.0, -75.0};
@@ -179,6 +244,10 @@ int main(int argc, char *argv[]) {
         if (time > SIMULATION_PERIOD/2) {
             pointsQueue.pop();
         }
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set color to white
+        drawLinesFromQueue(renderer, pointsQueue);
+
         SDL_RenderPresent(renderer);
 
         SDL_Delay(16);  // Delay to limit the frame rate
