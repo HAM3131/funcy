@@ -58,7 +58,6 @@ void drawArrow(SDL_Renderer *renderer, int x1, int y1, int x2, int y2) {
     SDL_RenderDrawLine(renderer, x2, y2, x4, y4);
 }
 
-
 void ComNumIntFourier(double amps[], double phases[], double thetas[], int count, int n, double density, double* finalAmp, double* finalPhase) {
     if (count == 0) return;
     double lastPoint = thetas[0];
@@ -109,6 +108,80 @@ void ComNumIntFourier(double amps[], double phases[], double thetas[], int count
         *finalAmp = 0.0;
         *finalPhase = 0.0;
     }
+
+void DrawThickLine(SDL_Renderer* renderer, int x1, int y1, int x2, int y2, int thickness) {
+    // Initialize variables for Bresenham's line algorithm
+    int dx = std::abs(x2 - x1);
+    int dy = std::abs(y2 - y1);
+    int sx = (x1 < x2) ? 1 : -1;
+    int sy = (y1 < y2) ? 1 : -1;
+    int err = dx - dy;
+
+    // Get current context color
+    // Variables to store the RGBA values
+    Uint8 r, g, b, a;
+
+    // Get the current draw color
+    if (SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a) != 0) {
+        // handle error
+        printf("Error getting draw color: %s\n", SDL_GetError());
+        return;
+    }
+
+    // Calculate offsets for thickness
+    int offsetX = 0;
+    int offsetY = 0;
+    if (dx != 0) {
+        offsetX = (thickness - 1) * sqrt(1 + (dy * dy) / (dx * dx));
+    }
+    if (dy != 0) {
+        offsetY = (thickness - 1) * sqrt(1 + (dx * dx) / (dy * dy));
+    }
+
+    // Loop to draw the line
+    while (true) {
+        // Draw central rectangle with context alpha
+        SDL_SetRenderDrawColor(renderer, r, g, b, a);
+        SDL_Rect rect;
+        rect.x = x1 - thickness / 2;
+        rect.y = y1 - thickness / 2;
+        rect.w = thickness;
+        rect.h = thickness;
+        SDL_RenderFillRect(renderer, &rect);
+
+        // Create anti-aliasing effect
+        for (int offset = 1; offset <= 2; ++offset) {
+            Uint8 alpha = a / (offset * 2);
+            SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
+
+            // Draw horizontal and vertical anti-aliasing rectangles
+            SDL_Rect hRect = rect;
+            hRect.x = rect.x - offset;
+            hRect.w = rect.w + 2 * offset;
+            SDL_RenderFillRect(renderer, &hRect);
+
+            SDL_Rect vRect = rect;
+            vRect.y = rect.y - offset;
+            vRect.h = rect.h + 2 * offset;
+            SDL_RenderFillRect(renderer, &vRect);
+        }
+
+        if (x1 == x2 && y1 == y2) {
+            break;
+        }
+
+        int e2 = 2 * err;
+        if (e2 > -dy) {
+            err -= dy;
+            x1 += sx;
+        }
+        if (e2 < dx) {
+            err += dx;
+            y1 += sy;
+        }
+    }
+    // Reset color
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
 
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
@@ -151,7 +224,7 @@ SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, double ampArray[], do
         int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
         drawArrow(renderer, (int)prev_x, (int)prev_y, (int)x, (int)y);
-        SDL_SetRenderDrawColor(renderer, 0, 125+(int)(color[2]/2), 0, 10);
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 70);
         drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
         prev_y = y;
@@ -164,16 +237,33 @@ void drawLinesFromQueue(SDL_Renderer *renderer, std::queue<SDL_Point> pointQueue
     std::queue<SDL_Point> queueCopy = pointQueue;
     SDL_Point currentPoint;
     SDL_Point lastPoint;
+
+    // Variables to store the RGBA values
+    Uint8 r, g, b, a;
+
+    // Get the current draw color
+    if (SDL_GetRenderDrawColor(renderer, &r, &g, &b, &a) != 0) {
+        // handle error
+        printf("Error getting draw color: %s\n", SDL_GetError());
+        return;
+    }
+
     if (!queueCopy.empty()) {
         lastPoint = queueCopy.front();
         queueCopy.pop();
     }
+    int i = 1;
     while (!queueCopy.empty()) {
+        if (i < 256){
+            SDL_SetRenderDrawColor(renderer, r, g, b, i);
+        }
         currentPoint = queueCopy.front();
         queueCopy.pop();
-        SDL_RenderDrawLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y);
+        DrawThickLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y, 5);
         lastPoint = currentPoint;
+        i++;
     }
+    SDL_SetRenderDrawColor(renderer, r, g, b, a);
 }
 
 int main(int argc, char *argv[]) {
@@ -195,6 +285,7 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     
     int quit = 0;
     SDL_Event event;
@@ -268,8 +359,6 @@ int main(int argc, char *argv[]) {
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set color to black
         SDL_RenderClear(renderer);
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set color to white
-        drawLinesFromQueue(renderer, pointsQueue);
 
         // drawSineWave(renderer, phase);
         double amps[] = {200.0, 150.0, -125.0, 100.0, -75.0};
@@ -280,6 +369,10 @@ int main(int argc, char *argv[]) {
         if (time > SIMULATION_PERIOD/2) {
             pointsQueue.pop();
         }
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set color to white
+        drawLinesFromQueue(renderer, pointsQueue);
+
         SDL_RenderPresent(renderer);
 
         SDL_Delay(16);  // Delay to limit the frame rate
