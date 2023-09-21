@@ -58,6 +58,44 @@ void drawArrow(SDL_Renderer *renderer, int x1, int y1, int x2, int y2) {
     SDL_RenderDrawLine(renderer, x2, y2, x4, y4);
 }
 
+
+double ComNumIntFourier(double amps[], double phases[], double thetas[], int count, int n, double density) {
+    if (count == 0) return 0.0;
+    double lastPoint = thetas[0];
+    double currentPoint;
+    double lastValR = amps[0]*cos(phases[0]-n*lastPoint);
+    double currentValR;
+    double lastValI = amps[0]*sin(phases[0]-n*lastPoint);
+    double currentValI;
+    double rValueSum = 0;
+    double iValueSum = 0;
+    int step = 0;
+    while (currentPoint < thetas[count-1] - density) {
+        int stepAdd = 0;
+        currentPoint = lastPoint + density;
+
+        if (currentPoint >= thetas[step + 1]) {
+            stepAdd = 1;
+            currentPoint = thetas[step + 1];
+        }
+
+        double lerp = (currentPoint - thetas[step]) / (thetas[step+1] - thetas[step]); // What % of the way between points you are
+        currentValR = (amps[step+1]*lerp+amps[step]*(1.0-lerp)) * cos((phases[step+1]*lerp+phases[step]*(1-lerp))-n*currentPoint);
+        currentValI = (amps[step+1]*lerp+amps[step]*(1.0-lerp)) * sin((phases[step+1]*lerp+phases[step]*(1-lerp))-n*currentPoint);
+        
+        rValueSum += (currentValR + lastValR)*(currentPoint - lastPoint)/2.0; // Trapezoid rule (for complex numbers... deadtome)
+        iValueSum == (currentValI + lastValI)*(currentPoint - lastPoint)/2.0; // i'm sure if we just split real and complex this is super valid
+        
+        lastPoint = currentPoint;
+        lastValR = currentValR;
+        lastValI = currentValI;
+        step += stepAdd;
+    }
+
+    
+    return 0.0;
+}
+
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
     
     if (radius < 0){
