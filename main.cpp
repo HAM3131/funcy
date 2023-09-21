@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <set>
 #include <SDL2/SDL.h>
 #include <math.h>
 #include <vector>
@@ -7,6 +8,14 @@
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 900
 #define SIMULATION_PERIOD 2
+
+struct CompareSDLPoint {
+    bool operator()(const SDL_Point& a, const SDL_Point& b) const {
+        if (a.x < b.x) return true;
+        if (a.x > b.x) return false;
+        return a.y < b.y;
+    }
+};
 
 // Function to draw an oscillating sine wave
 void drawSineWave(SDL_Renderer *renderer, float phase) {
@@ -67,7 +76,7 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
     }
 }
 
-void drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], float offsets[], int ampDegree, double t) {
+SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], float offsets[], int ampDegree, double t) {
     int colors = 3;
     float purpleness = 255.0/(colors-1);
     int prev_x = winDim[0]/2;
@@ -83,6 +92,8 @@ void drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], float of
         prev_x = x;
         prev_y = y;
     }
+
+    return SDL_Point {prev_x, prev_y};
 }
 
 int main(int argc, char *argv[]) {
@@ -110,6 +121,11 @@ int main(int argc, char *argv[]) {
     // Declare height and width variables
     int winDim[2] = {SCREEN_WIDTH, SCREEN_HEIGHT};
 
+    // Declare vector to hold the path traceed so far
+    std::set<SDL_Point, CompareSDLPoint> pointsSet = {};
+    std::vector<SDL_Point> pointsVector = {};
+    SDL_Point next_point;
+
     // Declare timekeeping variables
     double time = 0;
     Uint32 prev_time = SDL_GetTicks();
@@ -135,11 +151,16 @@ int main(int argc, char *argv[]) {
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set color to black
         SDL_RenderClear(renderer);
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set color to white
+        SDL_RenderDrawLines(renderer, pointsVector.data(), pointsVector.size());
 
-        //drawSineWave(renderer, phase);
+        // drawSineWave(renderer, phase);
         float amps[] = {200.0, 150.0, -125.0, 100.0, -75.0};
         float offsets[] = {1.0,0.5,23.2, 293.234, 0.0};
-        drawFourier(renderer, winDim, amps, offsets, 5, time / SIMULATION_PERIOD);
+        next_point = drawFourier(renderer, winDim, amps, offsets, 5, time / SIMULATION_PERIOD);
+        if (pointsSet.insert(next_point).second){
+            pointsVector.push_back(next_point);
+        }
 
         SDL_RenderPresent(renderer);
 
