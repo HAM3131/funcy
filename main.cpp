@@ -6,7 +6,7 @@
 
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 900
-#define SIMULATION_PERIOD 30
+#define SIMULATION_PERIOD 1
 
 // Function to draw an oscillating sine wave
 void drawSineWave(SDL_Renderer *renderer, float phase) {
@@ -49,6 +49,10 @@ void drawArrow(SDL_Renderer *renderer, int x1, int y1, int x2, int y2) {
 }
 
 void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
+    
+    if (radius < 0){
+        radius *= -1;
+    }
 
     for (int x = -radius; x <= radius; ++x) {
         int y = static_cast<int>(std::sqrt(radius * radius - x * x));
@@ -122,7 +126,7 @@ int main(int argc, char *argv[]) {
         SDL_RenderClear(renderer);
 
         //drawSineWave(renderer, phase);
-        float amps[] = {200.0, 150.0, 125.0, 100.0, 75.0};
+        float amps[] = {200.0, 150.0, -125.0, 100.0, -75.0};
         float offsets[] = {1.0,0.5,23.2, 293.234, 0.0};
         drawFourier(renderer, amps, offsets, 5, time / SIMULATION_PERIOD);
 
