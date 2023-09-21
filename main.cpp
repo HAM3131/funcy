@@ -4,10 +4,11 @@
 #include <math.h>
 #include <vector>
 #include <time.h>
+#include <queue>
 
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 900
-#define SIMULATION_PERIOD 2
+#define SIMULATION_PERIOD 8
 
 struct CompareSDLPoint {
     bool operator()(const SDL_Point& a, const SDL_Point& b) const {
@@ -82,10 +83,7 @@ SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], flo
     float prev_x = winDim[0]/2.0;
     float prev_y = winDim[1]/2.0;
     for (int i = 0; i < ampDegree; i++) {
-        float val = cos((i+1)*t+offsets[i]);
-        printf("Val: %f\n", val);
-        float x = prev_x + ampArray[i] * val;
-        printf("x: %f\n", x);
+        float x = prev_x + ampArray[i] * cos((i+1)*t+offsets[i]);
         float y = prev_y + ampArray[i] * (-sin((i+1)*t+offsets[i]));
         int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
@@ -97,6 +95,22 @@ SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], flo
     }
 
     return SDL_Point {(int)prev_x, (int)prev_y};
+}
+
+void drawLinesFromQueue(SDL_Renderer *renderer, std::queue<SDL_Point> pointQueue) {
+    std::queue<SDL_Point> queueCopy = pointQueue;
+    SDL_Point currentPoint;
+    SDL_Point lastPoint;
+    if (!queueCopy.empty()) {
+        lastPoint = queueCopy.front();
+        queueCopy.pop();
+    }
+    while (!queueCopy.empty()) {
+        currentPoint = queueCopy.front();
+        queueCopy.pop();
+        SDL_RenderDrawLine(renderer, currentPoint.x, currentPoint.y, lastPoint.x, lastPoint.y);
+        lastPoint = currentPoint;
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -124,15 +138,15 @@ int main(int argc, char *argv[]) {
     // Declare height and width variables
     int winDim[2] = {SCREEN_WIDTH, SCREEN_HEIGHT};
 
-    // Declare vector to hold the path traceed so far
-    std::set<SDL_Point, CompareSDLPoint> pointsSet = {};
-    std::vector<SDL_Point> pointsVector = {};
+    // std::vector<SDL_Point> pointsVector = {};
+    std::queue<SDL_Point> pointsQueue = {};
     SDL_Point next_point;
 
     // Declare timekeeping variables
     double time = 0;
     Uint32 prev_time = SDL_GetTicks();
     Uint32 now_time;
+
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
             // Handle quit event
@@ -155,16 +169,16 @@ int main(int argc, char *argv[]) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set color to black
         SDL_RenderClear(renderer);
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Set color to white
-        SDL_RenderDrawLines(renderer, pointsVector.data(), pointsVector.size());
+        drawLinesFromQueue(renderer, pointsQueue);
 
         // drawSineWave(renderer, phase);
         float amps[] = {200.0, 150.0, -125.0, 100.0, -75.0};
         float offsets[] = {1.0,0.5,23.2, 293.234, 0.0};
-        next_point = drawFourier(renderer, winDim, amps, offsets, 5, time / SIMULATION_PERIOD);
-        if (pointsSet.insert(next_point).second){
-            pointsVector.push_back(next_point);
+        next_point = drawFourier(renderer, winDim, amps, offsets, 5, time * 2.0 * M_PI / SIMULATION_PERIOD);
+        pointsQueue.push(next_point);
+        if (time > SIMULATION_PERIOD/2) {
+            pointsQueue.pop();
         }
-
         SDL_RenderPresent(renderer);
 
         SDL_Delay(16);  // Delay to limit the frame rate
