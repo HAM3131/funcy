@@ -64,16 +64,17 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
 }
 
 void drawFourier(SDL_Renderer *renderer, float ampArray[], float offsets[], int ampDegree, double t) {
-    float purpleness = 255.0/ampDegree;
+    int colors = 3;
+    float purpleness = 255.0/(colors-1);
     int prev_x = SCREEN_WIDTH/2;
     int prev_y = SCREEN_HEIGHT/2;
     for (int i = 0; i < ampDegree; i++) {
         int x = prev_x + ampArray[i] * cos((i+1)*t+offsets[i]);
         int y = prev_y + ampArray[i] * (-sin((i+1)*t+offsets[i]));
-        int color[] = {255-(int)(i * purpleness),0,(int)(i * purpleness),255};
+        int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
         drawArrow(renderer, prev_x, prev_y, x, y);
-        SDL_SetRenderDrawColor(renderer, 0, color[2], 0, 10);
+        SDL_SetRenderDrawColor(renderer, 0, 125+(int)(color[2]/2), 0, 10);
         drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
         prev_y = y;
