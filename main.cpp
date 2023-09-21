@@ -116,7 +116,6 @@ int main(int argc, char *argv[]) {
         // Find the time passed since last iteration
         now_time = SDL_GetTicks();
         time += (((double)(now_time - prev_time)) / 1000.0f);
-        printf("%f\n", time);
         prev_time = now_time;
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // Set color to black
