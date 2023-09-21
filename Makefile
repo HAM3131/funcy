@@ -1,7 +1,10 @@
-all: oscillating_sine_wave
+all: build run
 
-oscillating_sine_wave: main.cpp
-	gcc main.cpp -o oscillating_sine_wave -lSDL2 -lm
+build: main.cpp
+	gcc main.cpp -o animation -lSDL2 -lm
+
+run:
+	./animation
 
 clean:
-	rm -f oscillating_sine_wave
+	rm -f animation
