@@ -154,7 +154,7 @@ SDL_Point drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], flo
         int color[] = {255-(int)(i%colors * purpleness),0,(int)(i%colors * purpleness),255};
         SDL_SetRenderDrawColor(renderer, color[0], color[1], color[2], color[3]);
         drawArrow(renderer, (int)prev_x, (int)prev_y, (int)x, (int)y);
-        SDL_SetRenderDrawColor(renderer, 0, 125, 0, 10);
+        SDL_SetRenderDrawColor(renderer, 0, 255, 0, 90);
         drawCircle(renderer, prev_x, prev_y, ampArray[i]);
         prev_x = x;
         prev_y = y;
@@ -199,6 +199,7 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     
     int quit = 0;
     SDL_Event event;
