@@ -6,7 +6,7 @@
 
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 900
-#define SIMULATION_PERIOD 1
+#define SIMULATION_PERIOD 2
 
 // Function to draw an oscillating sine wave
 void drawSineWave(SDL_Renderer *renderer, float phase) {
@@ -67,11 +67,11 @@ void drawCircle(SDL_Renderer *renderer, int centerX, int centerY, int radius) {
     }
 }
 
-void drawFourier(SDL_Renderer *renderer, float ampArray[], float offsets[], int ampDegree, double t) {
+void drawFourier(SDL_Renderer *renderer, int *winDim, float ampArray[], float offsets[], int ampDegree, double t) {
     int colors = 3;
     float purpleness = 255.0/(colors-1);
-    int prev_x = SCREEN_WIDTH/2;
-    int prev_y = SCREEN_HEIGHT/2;
+    int prev_x = winDim[0]/2;
+    int prev_y = winDim[1]/2;
     for (int i = 0; i < ampDegree; i++) {
         int x = prev_x + ampArray[i] * cos((i+1)*t+offsets[i]);
         int y = prev_y + ampArray[i] * (-sin((i+1)*t+offsets[i]));
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
         SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH,
         SCREEN_HEIGHT,
-        0
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     );
 
     if (window == NULL) {
@@ -107,14 +107,25 @@ int main(int argc, char *argv[]) {
     
     int quit = 0;
     SDL_Event event;
-    double time = 0;
+    // Declare height and width variables
+    int winDim[2] = {SCREEN_WIDTH, SCREEN_HEIGHT};
 
+    // Declare timekeeping variables
+    double time = 0;
     Uint32 prev_time = SDL_GetTicks();
     Uint32 now_time;
     while (!quit) {
         while (SDL_PollEvent(&event) != 0) {
+            // Handle quit event
             if (event.type == SDL_QUIT) {
                 quit = 1;
+            }
+
+            // Handle window resize event
+            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                // You can handle the new window size here
+                winDim[0] = event.window.data1;
+                winDim[1] = event.window.data2;
             }
         }
         // Find the time passed since last iteration
@@ -128,7 +139,7 @@ int main(int argc, char *argv[]) {
         //drawSineWave(renderer, phase);
         float amps[] = {200.0, 150.0, -125.0, 100.0, -75.0};
         float offsets[] = {1.0,0.5,23.2, 293.234, 0.0};
-        drawFourier(renderer, amps, offsets, 5, time / SIMULATION_PERIOD);
+        drawFourier(renderer, winDim, amps, offsets, 5, time / SIMULATION_PERIOD);
 
         SDL_RenderPresent(renderer);
 
